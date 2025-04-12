@@ -207,4 +207,16 @@ button:hover {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Clickable timestamp styling */
+.clickable-timestamp {
+  color: #4285f4;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.clickable-timestamp:hover {
+  color: #3367d6;
 } 

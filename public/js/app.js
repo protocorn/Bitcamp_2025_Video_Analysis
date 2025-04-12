@@ -45,8 +45,9 @@ videoModal.addEventListener('click', (e) => {
 chatMessagesEl.addEventListener('click', (e) => {
   if (e.target && e.target.classList.contains('clickable-timestamp')) {
     const time = e.target.dataset.time;
+    const endTime = e.target.dataset.endTime; // Get the optional end time
     if (time && currentYoutubeVideoId) {
-      showVideoPopup(parseFloat(time));
+      showVideoPopup(parseFloat(time), endTime ? parseFloat(endTime) : null);
     }
   }
 });
@@ -261,10 +262,43 @@ function addMessage(sender, content) {
   const contentEl = document.createElement('div');
   contentEl.classList.add('message-content');
   
+  let processedContent = content;
   // Process content for clickable timestamps if it's from the assistant
   if (sender === 'assistant') {
-      contentEl.innerHTML = processTimestamps(content);
+      processedContent = processTimestamps(content);
+      // Set innerHTML to allow for timestamp spans
+      contentEl.innerHTML = processedContent;
+      
+      // Render math AFTER setting innerHTML, with a slight delay
+      // Use setTimeout to push rendering to the end of the event loop,
+      // giving KaTeX libraries more time to potentially load.
+      setTimeout(() => {
+          try {
+            // Check if BOTH KaTeX core and auto-render are loaded
+            if (window.katex && window.renderMathInElement) {
+              console.log("KaTeX loaded, attempting render on:", contentEl);
+              renderMathInElement(contentEl, {
+                delimiters: [
+                  {left: "$$", right: "$$", display: true},
+                  {left: "$", right: "$", display: false},
+                  {left: "\\(", right: "\\)", display: false},
+                  {left: "\\[", right: "\\]", display: true}
+                ],
+                throwOnError : false
+              });
+            } else {
+              console.warn("KaTeX libraries still not loaded after delay.");
+            }
+          } catch (katexError) {
+              console.error("Error rendering KaTeX (in setTimeout):", katexError);
+              // Fallback: Ensure content is still readable if rendering fails
+              // We might not want to overwrite innerHTML again here if timestamps are present
+              // contentEl.textContent = content; 
+          }
+      }, 0); // 0ms timeout pushes execution after current stack
+
   } else {
+      // For user messages, just set text content
       contentEl.textContent = content;
   }
   
@@ -282,6 +316,18 @@ function addMessage(sender, content) {
  * @returns {string} HTML string with clickable timestamps
  */
 function processTimestamps(text) {
+    // First, look for time ranges like "75s to 170s" with optional text before
+    const rangeRegex = /(?:approximately|approx|about|from|around|~|\(|\[|\s|^)(\d{1,3})s\s+to\s+(\d{1,3})s/gi;
+    let processedText = text.replace(rangeRegex, (match, startTime, endTime) => {
+        const startSeconds = parseInt(startTime, 10);
+        const endSeconds = parseInt(endTime, 10);
+        if (!isNaN(startSeconds) && !isNaN(endSeconds)) {
+            return `<span class="clickable-timestamp" data-time="${startSeconds}" data-end-time="${endSeconds}" title="Click to play video from ${startSeconds}s to ${endSeconds}s">${match}</span>`;
+        }
+        return match;
+    });
+    
+    // Then process regular single timestamps with existing regex
     // Regex revised to be more robust for various formats:
     // - Optional non-capturing group for prefixes like (, [, ~, around, at, approx
     // - Optional whitespace
@@ -289,7 +335,7 @@ function processTimestamps(text) {
     // - Optional whitespace + 's' + optional closing ), ], or boundary
     const regex = /(?:around|at|approx|~|\(|\[|\s|^)(\d{1,2}:\d{2}|\d+(?:\.\d+)?)\s*s(?=\)|\s|\]|$)/gi;
 
-    return text.replace(regex, (match, timeValue) => {
+    return processedText.replace(regex, (match, timeValue) => {
         let seconds = NaN;
         let displayMatch = match.trim(); // Use the captured match (trimmed) for display
 
@@ -315,16 +361,23 @@ function processTimestamps(text) {
     });
 }
 
-function showVideoPopup(timeInSeconds) {
+function showVideoPopup(timeInSeconds, endTimeInSeconds) {
   if (!currentYoutubeVideoId) {
     console.error("Cannot show video popup: YouTube Video ID is missing.");
     return;
   }
   
   const startTime = Math.floor(timeInSeconds); // YouTube start time needs integer seconds
-  const embedUrl = `https://www.youtube.com/embed/${currentYoutubeVideoId}?start=${startTime}&autoplay=1&rel=0`; // Added autoplay=1 and rel=0
   
-  console.log(`Showing video popup for ${currentYoutubeVideoId} starting at ${startTime}s`);
+  // Build the embed URL
+  let embedUrl = `https://www.youtube.com/embed/${currentYoutubeVideoId}?start=${startTime}&autoplay=1&rel=0`;
+  
+  // If we have an end time, add it as the end parameter
+  if (endTimeInSeconds && !isNaN(endTimeInSeconds)) {
+    embedUrl += `&end=${Math.floor(endTimeInSeconds)}`;
+  }
+  
+  console.log(`Showing video popup for ${currentYoutubeVideoId} starting at ${startTime}s${endTimeInSeconds ? ` ending at ${Math.floor(endTimeInSeconds)}s` : ''}`);
   
   youtubePlayer.src = embedUrl;
   videoModal.style.display = 'block';
