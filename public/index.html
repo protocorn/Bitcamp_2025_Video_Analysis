@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat with YouTube Video</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Chat with YouTube Video</h1>
+      <p>Ask questions about any YouTube video - with visual and audio analysis</p>
+    </header>
+
+    <div class="video-input-container">
+      <input type="text" id="youtube-url" placeholder="Paste YouTube URL here...">
+      <button id="process-video-btn">Process Video</button>
+    </div>
+
+    <div class="video-info" id="video-info" style="display: none;">
+      <div class="video-thumbnail" id="video-thumbnail"></div>
+      <div class="video-details">
+        <h3 id="video-title">Video Title</h3>
+        <p id="processing-status">Processing...</p>
+      </div>
+    </div>
+
+    <div class="frames-gallery" id="frames-gallery" style="display: none;">
+      <h3>Extracted Video Frames</h3>
+      <p>These frames will be analyzed along with the transcript for more accurate answers</p>
+      <div class="frames-container" id="frames-container"></div>
+    </div>
+
+    <div class="chat-container" id="chat-container" style="display: none;">
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input">
+        <input type="text" id="question-input" placeholder="Ask a question about the video...">
+        <button id="send-question-btn">Ask</button>
+      </div>
+    </div>
+
+    <div class="loading" id="loading" style="display: none;">
+      <div class="spinner"></div>
+      <p>Processing your request...</p>
+    </div>
+  </div>
+
+  <!-- Video Popup Modal -->
+  <div id="video-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close-modal" id="close-modal-btn">&times;</span>
+      <div class="video-player-container">
+        <iframe id="youtube-player" 
+                width="560" 
+                height="315" 
+                src="" 
+                title="YouTube video player" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen>
+        </iframe>
+      </div>
+    </div>
+  </div>
+  <!-- End Modal -->
+
+  <script src="js/app.js"></script>
+</body>
+</html> 
